@@ -35,6 +35,10 @@
 #include <v8.h>
 #include <node.h>
 #include <node_object_wrap.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
 
 using namespace v8;
 using namespace node;

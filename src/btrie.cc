@@ -37,6 +37,10 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <assert.h>
 // BITS should be either 32 or 128
 #define MAXBITS 128
