@@ -1,6 +1,6 @@
 {
   "name": "arkime-iptrie",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "directories": { "lib": "." },
   "keywords" : [ "iptrie", "blocklist", "IP", "acl" ],
   "description": "IP tries (prefix tree)",

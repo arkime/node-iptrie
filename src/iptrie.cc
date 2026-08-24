@@ -34,7 +34,7 @@
 
 #include <v8.h>
 #include <node.h>
-#include <node_object_wrap.h>
+#include "object_wrap.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -43,7 +43,7 @@
 using namespace v8;
 using namespace node;
 
-class IPTrie : public ObjectWrap {
+class IPTrie : public arkime::ObjectWrap {
   public:
     static Persistent<FunctionTemplate> s_ct;
     static void
@@ -196,7 +196,7 @@ class IPTrie : public ObjectWrap {
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
       int prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
 
-      IPTrie *iptrie = ObjectWrap::Unwrap<IPTrie>(args.This());
+      IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       Local<Value>data = args[2];
       if (iptrie->Add(*ipaddress, prefix_len, data) == 0) {
         isolate->ThrowException(
@@ -225,7 +225,7 @@ class IPTrie : public ObjectWrap {
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
       int prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
 
-      IPTrie *iptrie = ObjectWrap::Unwrap<IPTrie>(args.This());
+      IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       int success = iptrie->Del(*ipaddress, prefix_len);
 
       args.GetReturnValue().Set(success ? True(isolate) : False(isolate));
@@ -243,7 +243,7 @@ class IPTrie : public ObjectWrap {
 
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
-      IPTrie *iptrie = ObjectWrap::Unwrap<IPTrie>(args.This());
+      IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       obj_baton_t *d = iptrie->Find(*ipaddress);
       if(d != NULL) {
         args.GetReturnValue().Set(d->val.Get(isolate));
