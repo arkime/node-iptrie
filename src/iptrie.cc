@@ -194,7 +194,13 @@ class IPTrie : public arkime::ObjectWrap {
       }
 
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-      uint32_t prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
+      if (!args[1]->IsUint32()) {
+        isolate->ThrowException(
+          Exception::RangeError(
+            CheckedString(isolate, "Invalid prefix length")));
+        return;
+      }
+      uint32_t prefix_len = args[1].As<Uint32>()->Value();
 
       IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       Local<Value>data = args[2];
@@ -230,7 +236,13 @@ class IPTrie : public arkime::ObjectWrap {
       }
 
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-      uint32_t prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
+      if (!args[1]->IsUint32()) {
+        isolate->ThrowException(
+          Exception::RangeError(
+            CheckedString(isolate, "Invalid prefix length")));
+        return;
+      }
+      uint32_t prefix_len = args[1].As<Uint32>()->Value();
 
       IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       int success = iptrie->Del(*ipaddress, prefix_len);
