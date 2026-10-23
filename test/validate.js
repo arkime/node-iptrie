@@ -1,6 +1,4 @@
 var assert = require('assert'),
-    path = require('path'),
-    { Worker } = require('worker_threads'),
     iptrie = require('../index');
 
 var trie = new iptrie.IPTrie();
@@ -28,16 +26,4 @@ assert.equal(trie.find('10.1.2.3'), 'second');
 assert.equal(trie.del('10.0.0.0', 8), true);
 assert.equal(trie.find('10.1.2.3'), undefined);
 
-var worker = new Worker(
-  "var t = new (require(" + JSON.stringify(path.join(__dirname, '..', 'index')) + ").IPTrie)();" +
-  "t.add('192.168.0.0', 16, 'w');" +
-  "require('worker_threads').parentPort.postMessage(t.find('192.168.1.1'));",
-  { eval: true });
-var workerResult;
-worker.on('message', function (msg) { workerResult = msg; });
-worker.on('error', function (err) { throw err; });
-worker.on('exit', function (code) {
-  assert.equal(code, 0);
-  assert.equal(workerResult, 'w');
-  console.log('validate ok');
-});
+console.log('validate ok');

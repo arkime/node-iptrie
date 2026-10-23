@@ -46,9 +46,10 @@ using namespace node;
 class IPTrie : public arkime::ObjectWrap {
   public:
     static void
-    Initialize(v8::Local<v8::Object> target, v8::Local<v8::Context> context) {
-      Isolate *isolate = context->GetIsolate();
+    Initialize(v8::Local<v8::Object> target) {
+      Isolate *isolate = Isolate::GetCurrent();
       HandleScope scope(isolate);
+      Local<Context> context = isolate->GetCurrentContext();
 
       Local<FunctionTemplate> t = FunctionTemplate::New(isolate, New);
       Local<String> name = CheckedString(isolate, "IPTrie");
@@ -281,8 +282,8 @@ class IPTrie : public arkime::ObjectWrap {
 };
 
 extern "C" {
-static void init(Local<Object> exports, Local<Value> module, Local<Context> context, void *priv) {
-  IPTrie::Initialize(exports, context);
+static void init(Local<Object> target, Local<Value> module, void *priv) {
+  IPTrie::Initialize(target);
 }
-NODE_MODULE_CONTEXT_AWARE(iptrie, init);
+NODE_MODULE(iptrie, init);
 }
