@@ -48,7 +48,7 @@ class IPTrie : public arkime::ObjectWrap {
     static Persistent<FunctionTemplate> s_ct;
     static void
     Initialize(v8::Local<v8::Object> target) {
-      Isolate *isolate = target->GetIsolate();
+      Isolate *isolate = Isolate::GetCurrent();
       HandleScope scope(isolate);
 
       Local<FunctionTemplate> t = FunctionTemplate::New(isolate, New);
@@ -63,11 +63,7 @@ class IPTrie : public arkime::ObjectWrap {
 
 
       target->Set(isolate->GetCurrentContext(), name, t->GetFunction(isolate->GetCurrentContext()).ToLocalChecked())
-#ifdef NODE_VERSION_AT_LEAST(14, 0, 0)
         .ToChecked();
-#else
-        .Check();
-#endif
     }
 
     struct obj_baton_t {
@@ -163,11 +159,8 @@ class IPTrie : public arkime::ObjectWrap {
     }
 
     static Local <String> CheckedString(Isolate *isolate, const char *str) {
-      return String::NewFromUtf8(isolate, "IPTrie", v8::NewStringType::kNormal)
-#ifdef NODE_VERSION_AT_LEAST(14, 0, 0)
-        .ToLocalChecked()
-#endif
-              ;
+      return String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal)
+        .ToLocalChecked();
     }
 
     static void Add(const FunctionCallbackInfo<Value> &args) {
@@ -258,7 +251,7 @@ class IPTrie : public arkime::ObjectWrap {
 Persistent<FunctionTemplate> IPTrie::s_ct;
 
 extern "C" {
-static void init(Local<Object> target) {
+static void init(Local<Object> target, Local<Value> module, void *priv) {
   IPTrie::Initialize(target);
 }
 NODE_MODULE(iptrie, init);

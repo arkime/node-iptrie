@@ -10,7 +10,15 @@
 #define SRC_OBJECT_WRAP_H_
 
 #include <v8.h>
+#include <node_version.h>
 #include <cassert>
+
+// Node 26 (V8 14.x) requires a type tag on internal field pointers
+#if NODE_MAJOR_VERSION >= 26
+#define ARKIME_IF_TAG , v8::kEmbedderDataTypeTagDefault
+#else
+#define ARKIME_IF_TAG
+#endif
 
 namespace arkime {
 
@@ -28,7 +36,7 @@ class ObjectWrap {
     static inline T *Unwrap(v8::Local<v8::Object> handle) {
       assert(!handle.IsEmpty());
       assert(handle->InternalFieldCount() > 0);
-      void *ptr = handle->GetAlignedPointerFromInternalField(0);
+      void *ptr = handle->GetAlignedPointerFromInternalField(0 ARKIME_IF_TAG);
       ObjectWrap *wrap = static_cast<ObjectWrap *>(ptr);
       return static_cast<T *>(wrap);
     }
@@ -41,7 +49,7 @@ class ObjectWrap {
     inline void Wrap(v8::Local<v8::Object> handle) {
       assert(handle_.IsEmpty());
       assert(handle->InternalFieldCount() > 0);
-      handle->SetAlignedPointerInInternalField(0, this);
+      handle->SetAlignedPointerInInternalField(0, this ARKIME_IF_TAG);
       handle_.Reset(v8::Isolate::GetCurrent(), handle);
       MakeWeak();
     }
