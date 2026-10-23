@@ -45,15 +45,13 @@ using namespace node;
 
 class IPTrie : public arkime::ObjectWrap {
   public:
-    static Persistent<FunctionTemplate> s_ct;
     static void
-    Initialize(v8::Local<v8::Object> target) {
-      Isolate *isolate = Isolate::GetCurrent();
+    Initialize(v8::Local<v8::Object> target, v8::Local<v8::Context> context) {
+      Isolate *isolate = context->GetIsolate();
       HandleScope scope(isolate);
 
       Local<FunctionTemplate> t = FunctionTemplate::New(isolate, New);
       Local<String> name = CheckedString(isolate, "IPTrie");
-      s_ct.Reset(isolate, t);
       t->InstanceTemplate()->SetInternalFieldCount(3);
       t->SetClassName(name);
 
@@ -62,7 +60,7 @@ class IPTrie : public arkime::ObjectWrap {
       NODE_SET_PROTOTYPE_METHOD(t, "find", Find);
 
 
-      target->Set(isolate->GetCurrentContext(), name, t->GetFunction(isolate->GetCurrentContext()).ToLocalChecked())
+      target->Set(context, name, t->GetFunction(context).ToLocalChecked())
         .ToChecked();
     }
 
@@ -84,7 +82,7 @@ class IPTrie : public arkime::ObjectWrap {
       drop_tree(&tree6, delete_baton);
     }
 
-    int Add(const char *ip, int prefix, Local<Value> dv) {
+    int Add(const char *ip, uint32_t prefix, Local<Value> dv) {
       int family, rv;
       union {
         struct in_addr addr4;
@@ -100,16 +98,17 @@ class IPTrie : public arkime::ObjectWrap {
           return 0;
         }
       }
+      if(prefix > (family==AF_INET ? 32u : 128u)) return -1;
       obj_baton_t *baton = new obj_baton_t();
       baton->iptrie = this;
       baton->val.Reset(Isolate::GetCurrent(), dv);
 
-      if(family==AF_INET) add_route_ipv4(&tree4, &a.addr4, prefix, baton);
-      else add_route_ipv6(&tree6, &a.addr6, prefix, baton);
+      if(family==AF_INET) add_route_ipv4(&tree4, &a.addr4, prefix, baton, delete_baton);
+      else add_route_ipv6(&tree6, &a.addr6, prefix, baton, delete_baton);
       return 1;
     }
 
-    int Del(const char *ip, int prefix) {
+    int Del(const char *ip, uint32_t prefix) {
       int family, rv;
       union {
         struct in_addr addr4;
@@ -125,6 +124,7 @@ class IPTrie : public arkime::ObjectWrap {
           return 0;
         }
       }
+      if(prefix > (family==AF_INET ? 32u : 128u)) return -1;
       if(family==AF_INET) return del_route_ipv4(&tree4, &a.addr4, prefix, delete_baton);
       else return del_route_ipv6(&tree6, &a.addr6, prefix, delete_baton);
     }
@@ -152,6 +152,13 @@ class IPTrie : public arkime::ObjectWrap {
 
   protected:
     static void New(const FunctionCallbackInfo<Value> &args) {
+      Isolate *isolate = args.GetIsolate();
+      if (!args.IsConstructCall()) {
+        isolate->ThrowException(
+          Exception::TypeError(
+            CheckedString(isolate, "IPTrie must be called with new")));
+        return;
+      }
       IPTrie *iptrie = new IPTrie();
       iptrie->Wrap(args.This());
 
@@ -187,14 +194,21 @@ class IPTrie : public arkime::ObjectWrap {
       }
 
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-      int prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
+      uint32_t prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
 
       IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       Local<Value>data = args[2];
-      if (iptrie->Add(*ipaddress, prefix_len, data) == 0) {
+      int rv = iptrie->Add(*ipaddress, prefix_len, data);
+      if (rv == 0) {
         isolate->ThrowException(
           Exception::TypeError(
             CheckedString(isolate, "Could not parse IP")));
+        return;
+      }
+      if (rv < 0) {
+        isolate->ThrowException(
+          Exception::RangeError(
+            CheckedString(isolate, "Invalid prefix length")));
         return;
       }
     }
@@ -216,10 +230,16 @@ class IPTrie : public arkime::ObjectWrap {
       }
 
       String::Utf8Value ipaddress(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-      int prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
+      uint32_t prefix_len = args[1]->Uint32Value(isolate->GetCurrentContext()).ToChecked();
 
       IPTrie *iptrie = arkime::ObjectWrap::Unwrap<IPTrie>(args.This());
       int success = iptrie->Del(*ipaddress, prefix_len);
+      if (success < 0) {
+        isolate->ThrowException(
+          Exception::RangeError(
+            CheckedString(isolate, "Invalid prefix length")));
+        return;
+      }
 
       args.GetReturnValue().Set(success ? True(isolate) : False(isolate));
     }
@@ -248,11 +268,9 @@ class IPTrie : public arkime::ObjectWrap {
     btrie tree6;
 };
 
-Persistent<FunctionTemplate> IPTrie::s_ct;
-
 extern "C" {
-static void init(Local<Object> target, Local<Value> module, void *priv) {
-  IPTrie::Initialize(target);
+static void init(Local<Object> exports, Local<Value> module, Local<Context> context, void *priv) {
+  IPTrie::Initialize(exports, context);
 }
-NODE_MODULE(iptrie, init);
+NODE_MODULE_CONTEXT_AWARE(iptrie, init);
 }

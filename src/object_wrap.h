@@ -10,11 +10,11 @@
 #define SRC_OBJECT_WRAP_H_
 
 #include <v8.h>
-#include <node_version.h>
+#include <v8-version.h>
 #include <cassert>
 
-// Node 26 (V8 14.x) requires a type tag on internal field pointers
-#if NODE_MAJOR_VERSION >= 26
+// V8 14.2+ takes a type tag on internal field pointers
+#if V8_MAJOR_VERSION > 14 || (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION >= 2)
 #define ARKIME_IF_TAG , v8::kEmbedderDataTypeTagDefault
 #else
 #define ARKIME_IF_TAG
