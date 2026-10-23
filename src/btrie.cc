@@ -211,7 +211,7 @@ del_route_ipv4(btrie *tree, struct in_addr *a, unsigned char prefix_len,
 }
 
 void add_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
-               void *data) {
+               void *data, void (*f)(void *)) {
 #ifdef DEBUG_BTRIE
   char ipb[128];
 #define DA(n, pl, m) do { \
@@ -241,6 +241,7 @@ void add_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
   if(find_bpm_route(tree, key, prefix_len, &node, NULL)) {
     /* exact match */
     node->incidental = 0;
+    if(node->data && node->data != data && f) f(node->data);
     node->data = data;
     return;
   }
@@ -295,15 +296,17 @@ void add_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
 }
 
 void add_route_ipv4(btrie *tree, struct in_addr *a,
-                    unsigned char prefix_len, void *data) {
+                    unsigned char prefix_len, void *data,
+                    void (*f)(void *)) {
   uint32_t ia = ntohl(a->s_addr), mask;
   assert(prefix_len <= 32);
   mask = (prefix_len == 32) ? 0xffffffff : ~(0xffffffff >> prefix_len);
   ia &= mask;
-  add_route(tree, &ia, prefix_len, data);
+  add_route(tree, &ia, prefix_len, data, f);
 }
 void add_route_ipv6(btrie *tree, struct in6_addr *a,
-                    unsigned char prefix_len, void *data) {
+                    unsigned char prefix_len, void *data,
+                    void (*f)(void *)) {
   uint32_t ia[4], i, mask;
   int splen;
   memcpy(ia, &a->s6_addr, sizeof(ia));
@@ -315,6 +318,6 @@ void add_route_ipv6(btrie *tree, struct in6_addr *a,
     ia[i] = ntohl(ia[i]) & mask;
   }
   assert(prefix_len <= 128);
-  add_route(tree, ia, prefix_len, data);
+  add_route(tree, ia, prefix_len, data, f);
 }
 

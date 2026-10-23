@@ -1,13 +1,14 @@
 {
   "name": "arkime-iptrie",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "directories": { "lib": "." },
   "keywords" : [ "iptrie", "blocklist", "IP", "acl" ],
   "description": "IP tries (prefix tree)",
   "author" : { "name" : "Theo Schlossnagle" },
   "main": "iptrie",
   "repository": "https://github.com/arkime/node-iptrie",
-  "engines" : { "node" : ">= 4.2.0" },
+  "scripts" : { "test" : "node test/t.js && node test/validate.js" },
+  "engines" : { "node" : ">= 18.0.0" },
   "licenses" : [ { "type" : "BSD" } ]
 }
 
